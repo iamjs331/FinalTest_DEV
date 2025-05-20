@@ -25,28 +25,36 @@ const gameDeck = [ //[ 패의 점수, 특수패(광, 열끗)여부, 이미지 �
 const defaultChip = 100; //기본적으로 배팅될 칩의 수
 let nowChip = defaultChip; //배팅해야할 칩의 수
 
-let playerChip = 1000; //플레이어가 소지한 칩, 초기치 1000개
-let playerCard = []; //라운드마다 플레이어가 소지할 카드
+let player = {
+    name: "player", //구분용 이름
+    chip: 1000, //플레이어가 소지한 칩, 초기치 1000개
+    card: [] //라운드마다 플레이어가 소지할 카드
+};
 
-let computerChip = 1000; //컴퓨터가 소지한 칩, 초기치 1000개
-let computerCard = []; //라운드마다 컴퓨터가 소지할 카드
+let computer = {
+    name: "computer", //구분용 이름
+    chip: 1000, //컴퓨터가 소지한 칩, 초기치 1000개
+    card: [] //라운드마다 컴퓨터가 소지할 카드
+};
 
 let roundDeck = gameDeck; //라운드마다 초기화되는 덱, startRound() 함수에서 시작마다 gameDeck 변수가 할당됨.
 let bettingChip = 0; //현재 배팅된 칩, 라운드 승자의 칩을 수치만큼 가산 후 초기화
 
+let alive = ["player", "computer"]; // 현재 살아있는 유저, 1이 되면 종료
+let callUser = []; //현재 콜을 외친 유저
 
 function startRound(){
     roundReset();
 
-    playerChip = defaultBetting(playerChip); // 플레이어 기본 배팅
-    computerChip = defaultBetting(computerChip); // 컴퓨터 기본 배팅
+    defaultBetting(player); // 플레이어 기본 배팅
+    defaultBetting(computer); // 컴퓨터 기본 배팅
 
     for(let i = 0; i<2; i++){ // 모든 유저의 카드뽑기 2회 진행.
-        getCard(playerCard);
-        getCard(computerCard);
+        getCard(player);
+        getCard(computer);
     }
 
-    openComputerCard(computerCard, 0);
+    openComputerCard(computer, 0); // 컴퓨터의 첫번째 카드 공개
 }
 
 //라운드 초기화
@@ -55,8 +63,8 @@ function roundReset(){
     bettingChip = 0; //현재 배팅된 칩을 0개로 초기화
     nowChip = defaultChip; //배팅해야할 칩을 defaultChip 개로 초기화
 
-    playerCard = []; // 플레이어 카드 초기화
-    computerCard = []; //컴퓨터 카드 초기화
+    player.card = []; // 플레이어 카드 초기화
+    computer.card = []; //컴퓨터 카드 초기화
 }
 
 //모든 카드를를 뒷면으로 설정
@@ -68,53 +76,102 @@ function closeCard(){
 }
 
 //카드 공개
-function openComputerCard(userCard, num){
-    document.getElementsByClassName("computerCard1")[0].src = userCard[num].img;
+function openComputerCard(user, num){
+    document.getElementsByClassName("computerCard1")[0].src = user.card[num].img;
+}
+
+//카드 전체 공개 **테스트용입니다.
+function openAllCard(){
+    document.getElementsByClassName("computerCard1")[0].src = computer.card[0].img;
+    document.getElementsByClassName("computerCard2")[0].src = computer.card[1].img;
+    document.getElementsByClassName("playerCard1")[0].src = player.card[0].img;
+    document.getElementsByClassName("playerCard2")[0].src = player.card[1].img;
 }
 
 // 카드 뽑기
-function getCard(userCard){
+function getCard(user){
     let randomNum = Math.floor(Math.random() * roundDeck.length) // 0 ~ ( roundDeck의 길이 - 1 ) 에 해당하는 값 랜덤 지정, 카드를 뽑기 위함
     
-    userCard.push(roundDeck[randomNum]); //카드추가
+    user.card.push(roundDeck[randomNum]); //카드추가
     roundDeck.splice(randomNum, 1); //roundDeck에서 카드 삭제 
 }
 
 //기본 배팅
-function defaultBetting(userChip){
-    if (userChip === playerChip){ // 플레이어의 칩 확인
-        if (userChip < 0) { //칩이 없으면 패배
-            loseGame();
+function defaultBetting(user){
+    if (user.chip === player.chip){ // 플레이어의 칩 확인
+        if (user.chip < 0) { //칩이 없으면 패배
+            loseGame(); //게임 패배
         }
     }
     else{// 컴퓨터의 칩 확인
-        if (userChip < 0) { //칩이 없으면 패배
-            winGame();
+        if (user.chip < 0) { //칩이 없으면 패배
+            winGame(); //게임 승리
         }
     }
-    if (userChip < defaultChip){ //칩이 defaultChip개 미만이라면 칩을 전부 배팅
-        bettingChip = bettingChip + userChip
-        userChip = 0;
+    if (user.chip < defaultChip){ //칩이 defaultChip개 미만이라면 칩을 전부 배팅
+        bettingChip = bettingChip + user.chip; 
+        user.chip = 0;
     }
     else{ //칩이 defaultChip개 이상이라면 defaultChip개 만큼 배팅
-        bettingChip = bettingChip + defaultChip
-        userChip = userChip - defaultChip
+        bettingChip = bettingChip + defaultChip;
+        user.chip = user.chip - defaultChip;
     }
-    return userChip;
 } 
 
-function computerBetting(userChip){
-    let bettingType = computerJudg(computerCard[0],computerCard[1], computerCard[3])
+function computerBetting(){
+    let bettingType = computerJudg(computer.card[0],computer.card[1], computer.card[3])
 
-    if (bettingType === "die"){
+    if (bettingType === "die"){ //로직 결과 == die
+        dieBetting(computer); //컴퓨터의 다이 배팅
+    }
+    else if (bettingType === "call"){ //로직 결과 == call
+        callBetting(computer); //컴퓨터의 콜 배팅
+    }
+    else { //로직 결과 == half
+        halfBetting(computer); //컴퓨터의 하프 배팅
+    }
+}
 
-    }
-    else if (bettingType === "call"){
+//다이 배팅
+function dieBetting(user){
+    let index = alive.indexOf(user.name); //생존자 목록에서 다이 배팅을 한 유저 검색
 
+    if (index !== -1){ //오류 방지
+        alive.splice(index, 1); //생존자 목록에서 다이 배팅을 한 유저 삭제
     }
-    else {
-        
+
+    if (alive.length <= 1){ //생존자가 1명이라면
+        endRound(); //라운드 종료 후 결산
     }
+}
+
+//콜 배팅
+function callBetting(user){
+    if (user.chip >= nowChip){ //유저의 칩이 배팅요구치보다 많으면
+        user.chip = user.chip - nowChip; //요구치만큼 유저의 칩 감소
+        callUser.push(user.name); //콜 배팅을 한 사람 목록에 유저 추가
+    }
+    else{
+        userChip = 0; //올인이므로 유저의 칩을 0개로 만듦
+        callUser.push(user.name); //콜 배팅을 한 사람 목록에 유저 추가
+    }
+}
+
+//하프 배팅
+function halfBetting(user){
+    if (user.chip >= Math.floor(nowChip * 1.5)){ //유저의 칩이 배팅요구치의 1.5배보다 많으면
+        nowChip = Math.floor(nowChip * 1.5); //요구치를 1.5배로 설정하고
+        user.chip = user.chip - nowChip; //요구치만큼 유저의 칩 감소
+        callUser = [user.name]; //콜 배팅한 사람 목록을 유저명으로 할당
+    }
+    else{
+        callBetting(user); //유저의 칩이 요구치의 1.5배만큼 없다면 강제로 콜 배팅으로 넘어감.
+    }
+}
+
+//라운드 종료 시 칩 분배 등의 결과를 정산하는 코드
+function endRound(){
+
 }
 
 //플레이어의 칩이 0개가 되면 출력되는 코드 == 패배시 출력되는 코드
@@ -127,6 +184,7 @@ function winGame(){
     
 }
 
+//카드 입력 시 족보 출력.
 function getCardScore(card1, card2) {
     let temp = [card1, card2].sort((a, b) => a.score - b.score); //card1과 card2를 score의 크기에 따라 정렬 | a = card1, b = card2 를 의미하며 a.score - b.score가 음수라면 a가 b보다 먼저, 양수라면 b가 a보다 먼저 옴. => score값에 따라 오름차순 정렬
     card1 = temp[0];
@@ -174,7 +232,7 @@ function getCardScore(card1, card2) {
     else { // 0 ~ 9 끗
         return (card1.score + card2.score) % 10
     }
-} //카드 입력 시 족보 출력.
+} 
 
 //족보에 따라 랜덤한 확률 출력 함수수
 
