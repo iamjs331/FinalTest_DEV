@@ -22,7 +22,7 @@ const gameDeck = [ //[ 패의 점수, 특수패(광, 열끗)여부, 이미지 �
     {score: 10, isSpecial: false, img: "multiMedia/10_2.jpg"}
 ]
 
-const defaultChip = 100; //기본적으로 배팅될 칩의 수
+const defaultChip = 0; //기본적으로 배팅될 칩의 수
 let nowChip = defaultChip; //배팅해야할 칩의 수
 
 let player = {
@@ -59,7 +59,7 @@ function startRound(){
 
 //라운드 초기화
 function roundReset(){
-    roundDeck = gameDeck; //라운드에서 사용할 덱 초기화
+    roundDeck = [...gameDeck]; //라운드에서 사용할 덱 초기화
     bettingChip = 0; //현재 배팅된 칩을 0개로 초기화
     nowChip = defaultChip; //배팅해야할 칩을 defaultChip 개로 초기화
 
@@ -69,23 +69,23 @@ function roundReset(){
 
 //모든 카드를를 뒷면으로 설정
 function closeCard(){
-    document.getElementsByClassName("playerCard1")[0].src = "multiMedia/0_0뒷면.jpg";
-    document.getElementsByClassName("playerCard2")[0].src = "multiMedia/0_0뒷면.jpg";
-    document.getElementsByClassName("computerCard1")[0].src = "multiMedia/0_0뒷면.jpg";
-    document.getElementsByClassName("computerCard2")[0].src = "multiMedia/0_0뒷면.jpg";
+    document.getElementById("playerCard1").src = "multiMedia/0_0뒷면.jpg";
+    document.getElementById("playerCard2").src = "multiMedia/0_0뒷면.jpg";
+    document.getElementById("computerCard1").src = "multiMedia/0_0뒷면.jpg";
+    document.getElementById("computerCard2").src = "multiMedia/0_0뒷면.jpg";
 }
 
 //카드 공개
 function openComputerCard(user, num){
-    document.getElementsByClassName("computerCard1")[0].src = user.card[num].img;
+    document.getElementById("computerCard1").src = user.card[num].img;
 }
 
 //카드 전체 공개 **테스트용입니다.
 function openAllCard(){
-    document.getElementsByClassName("computerCard1")[0].src = computer.card[0].img;
-    document.getElementsByClassName("computerCard2")[0].src = computer.card[1].img;
-    document.getElementsByClassName("playerCard1")[0].src = player.card[0].img;
-    document.getElementsByClassName("playerCard2")[0].src = player.card[1].img;
+    document.getElementById("computerCard1").src = computer.card[0].img;
+    document.getElementById("computerCard2").src = computer.card[1].img;
+    document.getElementById("playerCard1").src = player.card[0].img;
+    document.getElementById("playerCard2").src = player.card[1].img;
 }
 
 // 카드 뽑기
@@ -98,7 +98,7 @@ function getCard(user){
 
 //기본 배팅
 function defaultBetting(user){
-    if (user.chip === player.chip){ // 플레이어의 칩 확인
+    if (user === player){ // 플레이어의 칩 확인
         if (user.chip < 0) { //칩이 없으면 패배
             loseGame(); //게임 패배
         }
