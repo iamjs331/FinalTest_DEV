@@ -22,8 +22,7 @@ const gameDeck = [ //[ 패의 점수, 특수패(광, 열끗)여부, 이미지 �
     {score: 10, isSpecial: false, img: "multiMedia/10_2.jpg"}
 ]
 
-const defaultChip = 0; //기본적으로 배팅될 칩의 수
-let nowChip = defaultChip; //배팅해야할 칩의 수
+const defaultChip = 10; //기본적으로 배팅될 칩의 수
 
 let player = {
     name: "player", //구분용 이름
@@ -37,17 +36,21 @@ let computer = {
     card: [] //라운드마다 컴퓨터가 소지할 카드
 };
 
-let roundDeck = gameDeck; //라운드마다 초기화되는 덱, startRound() 함수에서 시작마다 gameDeck 변수가 할당됨.
-let bettingChip = 0; //현재 배팅된 칩, 라운드 승자의 칩을 수치만큼 가산 후 초기화
-
-let alive = ["player", "computer"]; // 현재 살아있는 유저, 1이 되면 종료
-let callUser = []; //현재 콜을 외친 유저
+let round = {
+    deck: gameDeck, //라운드마다 초기화되는 덱, startRound() 함수에서 시작마다 gameDeck 변수가 할당됨.
+    bettingChip: 0, //현재 배팅된 칩, 라운드 승자의 칩을 수치만큼 가산 후 초기화
+    nowChip: defaultChip, //배팅해야할 칩의 수
+    alive: [player.name, computer.name], // 현재 살아있는 유저, 1이 되면 종료
+    callUser: [] //현재 콜을 외친 유저
+}
 
 function startRound(){
     roundReset();
 
     defaultBetting(player); // 플레이어 기본 배팅
     defaultBetting(computer); // 컴퓨터 기본 배팅
+
+    document.getElementById("bettingChip").textContent = "배팅된 칩 : " + round.bettingChip;
 
     for(let i = 0; i<2; i++){ // 모든 유저의 카드뽑기 2회 진행.
         getCard(player);
@@ -59,12 +62,16 @@ function startRound(){
 
 //라운드 초기화
 function roundReset(){
-    roundDeck = [...gameDeck]; //라운드에서 사용할 덱 초기화
-    bettingChip = 0; //현재 배팅된 칩을 0개로 초기화
-    nowChip = defaultChip; //배팅해야할 칩을 defaultChip 개로 초기화
+    round.deck = [...gameDeck]; //라운드에서 사용할 덱 초기화
+    round.bettingChip = 0; //현재 배팅된 칩을 0개로 초기화
+    round.nowChip = defaultChip; //배팅해야할 칩을 defaultChip 개로 초기화
+    round.alive = [player.name, computer.name]; //생존 유저 목록 초기화
+    round.callUser = []; //콜을 외친 유저 목록 초기화
 
     player.card = []; // 플레이어 카드 초기화
     computer.card = []; //컴퓨터 카드 초기화
+
+    document.getElementById("bettingChip").textContent = "배팅된 칩 : 0";
 }
 
 //모든 카드를를 뒷면으로 설정
@@ -90,10 +97,10 @@ function openAllCard(){
 
 // 카드 뽑기
 function getCard(user){
-    let randomNum = Math.floor(Math.random() * roundDeck.length) // 0 ~ ( roundDeck의 길이 - 1 ) 에 해당하는 값 랜덤 지정, 카드를 뽑기 위함
+    let randomNum = Math.floor(Math.random() * round.deck.length) // 0 ~ ( roundDeck의 길이 - 1 ) 에 해당하는 값 랜덤 지정, 카드를 뽑기 위함
     
-    user.card.push(roundDeck[randomNum]); //카드추가
-    roundDeck.splice(randomNum, 1); //roundDeck에서 카드 삭제 
+    user.card.push(round.deck[randomNum]); //카드추가
+    round.deck.splice(randomNum, 1); //roundDeck에서 카드 삭제 
 }
 
 //기본 배팅
@@ -109,11 +116,11 @@ function defaultBetting(user){
         }
     }
     if (user.chip < defaultChip){ //칩이 defaultChip개 미만이라면 칩을 전부 배팅
-        bettingChip = bettingChip + user.chip; 
+        round.bettingChip = round.bettingChip + user.chip; 
         user.chip = 0;
     }
     else{ //칩이 defaultChip개 이상이라면 defaultChip개 만큼 배팅
-        bettingChip = bettingChip + defaultChip;
+        round.bettingChip = round.bettingChip + defaultChip;
         user.chip = user.chip - defaultChip;
     }
 } 
@@ -134,35 +141,35 @@ function computerBetting(){
 
 //다이 배팅
 function dieBetting(user){
-    let index = alive.indexOf(user.name); //생존자 목록에서 다이 배팅을 한 유저 검색
+    let index = round.alive.indexOf(user.name); //생존자 목록에서 다이 배팅을 한 유저 검색
 
     if (index !== -1){ //오류 방지
-        alive.splice(index, 1); //생존자 목록에서 다이 배팅을 한 유저 삭제
+        round.alive.splice(index, 1); //생존자 목록에서 다이 배팅을 한 유저 삭제
     }
 
-    if (alive.length <= 1){ //생존자가 1명이라면
+    if (round.alive.length <= 1){ //생존자가 1명이라면
         endRound(); //라운드 종료 후 결산
     }
 }
 
 //콜 배팅
 function callBetting(user){
-    if (user.chip >= nowChip){ //유저의 칩이 배팅요구치보다 많으면
-        user.chip = user.chip - nowChip; //요구치만큼 유저의 칩 감소
-        callUser.push(user.name); //콜 배팅을 한 사람 목록에 유저 추가
+    if (user.chip >= round.nowChip){ //유저의 칩이 배팅요구치보다 많으면
+        user.chip = user.chip - round.nowChip; //요구치만큼 유저의 칩 감소
+        round.callUser.push(user.name); //콜 배팅을 한 사람 목록에 유저 추가
     }
     else{
-        userChip = 0; //올인이므로 유저의 칩을 0개로 만듦
-        callUser.push(user.name); //콜 배팅을 한 사람 목록에 유저 추가
+        user.chip = 0; //올인이므로 유저의 칩을 0개로 만듦
+        round.callUser.push(user.name); //콜 배팅을 한 사람 목록에 유저 추가
     }
 }
 
 //하프 배팅
 function halfBetting(user){
-    if (user.chip >= Math.floor(nowChip * 1.5)){ //유저의 칩이 배팅요구치의 1.5배보다 많으면
-        nowChip = Math.floor(nowChip * 1.5); //요구치를 1.5배로 설정하고
-        user.chip = user.chip - nowChip; //요구치만큼 유저의 칩 감소
-        callUser = [user.name]; //콜 배팅한 사람 목록을 유저명으로 할당
+    if (user.chip >= Math.floor(round.nowChip * 1.5)){ //유저의 칩이 배팅요구치의 1.5배보다 많으면
+        round.nowChip = Math.floor(round.nowChip * 1.5); //요구치를 1.5배로 설정하고
+        user.chip = user.chip - round.nowChip; //요구치만큼 유저의 칩 감소
+        round.callUser = [user.name]; //콜 배팅한 사람 목록을 유저명으로 할당
     }
     else{
         callBetting(user); //유저의 칩이 요구치의 1.5배만큼 없다면 강제로 콜 배팅으로 넘어감.
@@ -171,7 +178,7 @@ function halfBetting(user){
 
 //라운드 종료 시 칩 분배 등의 결과를 정산하는 코드
 function endRound(){
-
+    
 }
 
 //플레이어의 칩이 0개가 되면 출력되는 코드 == 패배시 출력되는 코드
