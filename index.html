@@ -9,13 +9,18 @@
     <h1 onclick="startRound()">시작</h1>
     <h1 onclick="closeCard()">초기화</h1>
     <h1 onclick="openAllCard()">전체공개</h1>
+    <br>
+    <h1>컴퓨터의 패</h1>
     <div>
         <img id="computerCard1" src="multiMedia/0_0뒷면.jpg">
         <img id="computerCard2" src="multiMedia/0_0뒷면.jpg">
+        <img id="computerCard3" src="multiMedia/0_0뒷면.jpg">
     </div>
+    <h1>플레이어의 패</h1>
     <div>
         <img id="playerCard1" src="multiMedia/0_0뒷면.jpg">
         <img id="playerCard2" src="multiMedia/0_0뒷면.jpg">
+        <img id="playerCard3" src="multiMedia/0_0뒷면.jpg">
     </div>
 
     <h1 id="bettingChip">배팅된 칩 : 0</h1>
@@ -24,6 +29,10 @@
         <h2 onclick="dieBetting(player)">다이</h2>
         <h2 onclick="callBetting(player)">콜</h2>
         <h2 onclick="halfBetting(player)">하프</h2>
+    </div>
+    <div>
+        <h2 id="computerChip">컴퓨터의 칩 : 1000</h2>
+        <h2 id="playerChip">플레이어의 칩 : 1000</h2>
     </div>
 
 </body>

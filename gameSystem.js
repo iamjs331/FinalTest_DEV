@@ -41,8 +41,14 @@ let round = {
     bettingChip: 0, //현재 배팅된 칩, 라운드 승자의 칩을 수치만큼 가산 후 초기화
     nowChip: defaultChip, //배팅해야할 칩의 수
     alive: [player.name, computer.name], // 현재 살아있는 유저, 1이 되면 종료
-    callUser: [] //현재 콜을 외친 유저
+    callUser: [], //콜을 외친 유저
+    allinUser: [], //올인한 유저
+    repeat: 0, //배팅 반복수, 최대 3회
+    round: 0
 }
+
+let userList = [ player, computer ]
+let bettingTurn;
 
 function startRound(){
     roundReset();
@@ -50,14 +56,26 @@ function startRound(){
     defaultBetting(player); // 플레이어 기본 배팅
     defaultBetting(computer); // 컴퓨터 기본 배팅
 
-    document.getElementById("bettingChip").textContent = "배팅된 칩 : " + round.bettingChip;
+    docBettingChip() //표기변경
+    docUserChip() //표기변경
 
     for(let i = 0; i<2; i++){ // 모든 유저의 카드뽑기 2회 진행.
         getCard(player);
         getCard(computer);
     }
 
+    openPlayerCard(0);
+    openPlayerCard(1);
     openComputerCard(computer, 0); // 컴퓨터의 첫번째 카드 공개
+
+    if (Math.random*100 < 50){
+        bettingTurn = userList[0]
+    }
+    else{
+        bettingTurn = userList[1]
+        computerBetting();
+    }
+
 }
 
 //라운드 초기화
@@ -67,19 +85,24 @@ function roundReset(){
     round.nowChip = defaultChip; //배팅해야할 칩을 defaultChip 개로 초기화
     round.alive = [player.name, computer.name]; //생존 유저 목록 초기화
     round.callUser = []; //콜을 외친 유저 목록 초기화
+    round.round = 0;
 
     player.card = []; // 플레이어 카드 초기화
     computer.card = []; //컴퓨터 카드 초기화
 
-    document.getElementById("bettingChip").textContent = "배팅된 칩 : 0";
+    closeCard(); //카드 비공개
+    docBettingChip() //표기변경
+    docUserChip() //표기 변경
 }
 
 //모든 카드를를 뒷면으로 설정
 function closeCard(){
     document.getElementById("playerCard1").src = "multiMedia/0_0뒷면.jpg";
     document.getElementById("playerCard2").src = "multiMedia/0_0뒷면.jpg";
+    document.getElementById("playerCard3").src = "multiMedia/0_0뒷면.jpg";
     document.getElementById("computerCard1").src = "multiMedia/0_0뒷면.jpg";
     document.getElementById("computerCard2").src = "multiMedia/0_0뒷면.jpg";
+    document.getElementById("computerCard3").src = "multiMedia/0_0뒷면.jpg";
 }
 
 //카드 공개
@@ -87,12 +110,25 @@ function openComputerCard(user, num){
     document.getElementById("computerCard1").src = user.card[num].img;
 }
 
+function openPlayerCard(num){
+    if (num === 0) document.getElementById("playerCard1").src = player.card[num].img;
+    else if (num === 1) document.getElementById("playerCard2").src = player.card[num].img;
+    else if (num === 2) document.getElementById("playerCard3").src = player.card[num].img;
+    else return;
+}
+
 //카드 전체 공개 **테스트용입니다.
 function openAllCard(){
     document.getElementById("computerCard1").src = computer.card[0].img;
     document.getElementById("computerCard2").src = computer.card[1].img;
+    if (computer.card[2] !== undefined) {
+        document.getElementById("computerCard3").src = computer.card[2].img;
+    }
     document.getElementById("playerCard1").src = player.card[0].img;
     document.getElementById("playerCard2").src = player.card[1].img;
+    if (player.card[2] !== undefined){
+        document.getElementById("playerCard3").src = player.card[2].img;
+    }
 }
 
 // 카드 뽑기
@@ -137,6 +173,8 @@ function computerBetting(){
     else { //로직 결과 == half
         halfBetting(computer); //컴퓨터의 하프 배팅
     }
+
+    bettingTurn = userList[0];
 }
 
 //다이 배팅
@@ -147,29 +185,83 @@ function dieBetting(user){
         round.alive.splice(index, 1); //생존자 목록에서 다이 배팅을 한 유저 삭제
     }
 
-    if (round.alive.length <= 1){ //생존자가 1명이라면
+    if (round.alive.length === 1){ //생존자가 1명이라면
         endRound(); //라운드 종료 후 결산
     }
 }
 
 //콜 배팅
 function callBetting(user){
+    if (user.name ==="player" && bettingTurn !== player){
+        alert("당신의 턴이 아닙니다!");
+        return;
+    }
+    if (user.chip <= 0){
+        if (round.alive.includes(user.name)){
+            if (round.callUser.includes(user.name)){ 
+                return;
+            }
+            else{
+                round.callUser.push(user.name)
+            }
+        }
+        return; //칩이 0개라면 넘어감
+    }
     if (user.chip >= round.nowChip){ //유저의 칩이 배팅요구치보다 많으면
         user.chip = user.chip - round.nowChip; //요구치만큼 유저의 칩 감소
-        round.callUser.push(user.name); //콜 배팅을 한 사람 목록에 유저 추가
+        round.bettingChip = round.bettingChip + round.nowChip; //전체 배팅 칩을 배팅요구치만큼 증가
     }
     else{
+        round.bettingChip = round.bettingChip + user.chip; //전체 배팅 칩을 유저의 칩만큼 증가
         user.chip = 0; //올인이므로 유저의 칩을 0개로 만듦
-        round.callUser.push(user.name); //콜 배팅을 한 사람 목록에 유저 추가
     }
+    round.callUser.push(user.name); //콜 배팅을 한 사람 목록에 유저 추가
+    docBettingChip(); //표기변경
+    docUserChip(); // 표기변경
+
+    if (round.alive.length === round.callUser.length){
+        if (round.round === 0){
+            round.round++;
+            round.callUser = [];
+            getCard(player);
+            getCard(computer);
+            openPlayerCard(2);
+            return;
+        }
+        else {
+            endRound();
+            return;
+        }
+    }
+
+    if (user.name == "player"){
+        bettingTurn = userList[1];
+        setTimeout(computerBetting, 500);
+    }
+
+    
 }
 
 //하프 배팅
 function halfBetting(user){
+    if (user.name ==="player" && bettingTurn !== player){
+        alert("당신의 턴이 아닙니다!");
+        return;
+    }
     if (user.chip >= Math.floor(round.nowChip * 1.5)){ //유저의 칩이 배팅요구치의 1.5배보다 많으면
         round.nowChip = Math.floor(round.nowChip * 1.5); //요구치를 1.5배로 설정하고
         user.chip = user.chip - round.nowChip; //요구치만큼 유저의 칩 감소
+        round.bettingChip = round.bettingChip + round.nowChip; //요구치만큼 전체 배팅 칩 증가
         round.callUser = [user.name]; //콜 배팅한 사람 목록을 유저명으로 할당
+
+        docBettingChip(); //표기 변경
+        docNowChip(); //표기 변경
+        docUserChip(); //표기 변경
+
+        if (user.name == "player"){
+            bettingTurn = userList[1];
+            setTimeout(computerBetting, 500);
+        }
     }
     else{
         callBetting(user); //유저의 칩이 요구치의 1.5배만큼 없다면 강제로 콜 배팅으로 넘어감.
@@ -178,7 +270,31 @@ function halfBetting(user){
 
 //라운드 종료 시 칩 분배 등의 결과를 정산하는 코드
 function endRound(){
+    let winner;
+
+    if (round.alive.length === 1){
+        for(let i = 0; i < userList.length; i++){
+            if (userList[i].name == round.alive){
+                winner = userList[i];
+                break;
+            }
+        }   
+    }
+    else if (round.alive.length > 1) {
+        winner = getWinner();
+    }
     
+    openAllCard();
+    console.log(winner)
+    winner.chip = winner.chip + round.bettingChip;
+
+    round.bettingChip = 0;
+    docBettingChip() //표기변경
+
+    round.nowChip = defaultChip;
+    docNowChip() //표기 변경
+
+    docUserChip() //표기 변경
 }
 
 //플레이어의 칩이 0개가 되면 출력되는 코드 == 패배시 출력되는 코드
@@ -189,6 +305,34 @@ function loseGame(){
 //모든 컴퓨터의 칩이 0개가 되면 출력되는 코드 == 승리시 출력되는 코드
 function winGame(){
     
+}
+
+//배팅된 칩이 몇 개인지 변경시킴 ( html )
+function docBettingChip() {
+    document.getElementById("bettingChip").textContent = "배팅된 칩 : " + round.bettingChip; //표기 변경
+}
+
+//배팅요구치가 몇 개 인지 변경시킴 ( html )
+function docNowChip() {
+    document.getElementById("nowChip").textContent = "배팅요구치 : " + round.nowChip; // 표기 변경
+}
+
+//유저들의 칩 갯수 현황 변경 ( html )
+function docUserChip() {
+    document.getElementById("computerChip").textContent = "컴퓨터의 칩 : " + computer.chip;
+    document.getElementById("playerChip").textContent = "플레이어의 칩 : " + player.chip;
+}
+
+function getWinner(){
+    let computerScore = getCardScore(computer.card[0], computer.card[1]);
+
+    // if (card3 !== undefined){
+    //     computerScore = Math.max(getCardScore(computer.card[0], computer.card[1]), getCardScore(computer.card[1], computer.card[2]), getCardScore(computer.card[2], computer.card[3]))
+    // }
+
+    let playerScore = getCardScore(player.card[0], player.card[1])
+
+    return playerScore > computer ? player : computer
 }
 
 //카드 입력 시 족보 출력.
@@ -345,11 +489,10 @@ function specialScore() {
 
 // 컴퓨터가 받은 패를 판단 후 확률 출력하는 함수
 function computerJudg(card1, card2, card3) {
-    if (card3 === undefined){
-        let computerScore = getCardScore(card1, card2);
-    }
-    else{
-        let computerScore = Math.max(getCardScore(card1, card2), getCardScore(card2, card3), getCardScore(card1, card3))
+    let computerScore = getCardScore(card1, card2);
+
+    if (card3 !== undefined){
+        computerScore = Math.max(getCardScore(card1, card2), getCardScore(card2, card3), getCardScore(card1, card3))
     }
     if (computerScore === 0) { // "망통"
         return bestLowScore();
