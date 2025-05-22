@@ -93,6 +93,9 @@
    1. roundDeck, bettingChip, nowChip, alive, callUser를 round라는 이름의 객체로 통합
 
 추가사항
+   1. 1 ~ 14 알고리즘 완성
 
 디버깅
-1. roundDeck이 초기화되지 않던 오류 수정
+   1. roundDeck이 초기화되지 않던 오류 수정
+
+# 2025 / 05 / 22
