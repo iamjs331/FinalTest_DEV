@@ -43,10 +43,8 @@ let round = {
     nowChip: defaultChip, //배팅해야할 칩의 수
     alive: [player.name, computer.name], // 현재 살아있는 유저, 1이 되면 종료
     callUser: [], //콜을 외친 유저 
-    allinUser: [], //올인한 유저
-    repeat: 0, //배팅 반복수, 최대 3회
     round: 0,
-    bettingTurn: undefined
+    bettingTurn: "end"
 }
 
 let userList = [ player, computer ]
@@ -70,7 +68,7 @@ function startRound(){
     openComputerCard(computer, 0); // 컴퓨터의 첫번째 카드 공개
 
     let rand = Math.random() * 100;
-    console.log(rand)
+
     if (rand < 50){
         round.bettingTurn = userList[0].name
     }
@@ -178,13 +176,14 @@ function computerBetting(){
     else { //로직 결과 == half
         halfBetting(computer); //컴퓨터의 하프 배팅
     }
-
-    round.bettingTurn = userList[0].name; //배팅할 차례를 플레이어에게 넘김
+    if (round.bettingTurn === "computer"){
+        round.bettingTurn = userList[0].name; //배팅할 차례를 플레이어에게 넘김
+    }
 }
 
 //다이 배팅
 function dieBetting(user){
-    if (round.bettingTurn === undefined){ //배팅할 턴이 아니라면 강제종료.
+    if (round.bettingTurn === "end"){ //배팅할 턴이 아니라면 강제종료.
         return
     }
     if (user.name ==="player" && round.bettingTurn !== "player"){ //배팅할 턴이 아니라면 강제종료.
@@ -200,12 +199,14 @@ function dieBetting(user){
 
     if (round.alive.length === 1){ //생존자가 1명이라면
         endRound(); //라운드 종료 후 결산
+        return;
     }
+    
 }
 
 //콜 배팅
 function callBetting(user){
-    if (round.bettingTurn === undefined){ //배팅할 턴이 아니라면 강제종료.
+    if (round.bettingTurn === "end"){ //배팅할 턴이 아니라면 강제종료.
         return
     }
     if (user.name ==="player" && round.bettingTurn !== "player"){ //배팅할 턴이 아니라면 강제종료.
@@ -242,6 +243,14 @@ function callBetting(user){
             getCard(player); //3번째 카드 지급
             getCard(computer); //3번째 카드 지급
             openPlayerCard(2); //플레이어의 카드 오픈
+            
+            if (user.name === "player" && round.bettingTurn === "player"){
+                round.bettingTurn = userList[1].name; //배팅할 유저 변경
+                setTimeout(computerBetting, 500); //0.5초 후 컴퓨터의 배팅
+            }
+            else{
+                round.bettingTurn = userList[0].name; //배팅할 유저 변경
+            }
             return;
         }
         else { // 3번째 카드를 받은 상황
@@ -249,7 +258,7 @@ function callBetting(user){
             return;
         }
     }
-    if (user.name == "player" && round.bettingTurn === "player"){ //배팅할 턴이 아니라면 강제종료.
+    if (user.name === "player" && round.bettingTurn === "player"){ //배팅할 턴이 아니라면 강제종료.
         round.bettingTurn = userList[1].name; //배팅할 유저 변경
         setTimeout(computerBetting, 500); //0.5초 후 컴퓨터의 배팅
         return;
@@ -258,7 +267,7 @@ function callBetting(user){
 
 //하프 배팅
 function halfBetting(user){
-    if (round.bettingTurn === undefined){ //배팅할 턴이 아니라면 강제종료.
+    if (round.bettingTurn === "end"){ //배팅할 턴이 아니라면 강제종료.
         return
     }
     if (user.name ==="player" && round.bettingTurn !== "player"){ //배팅할 턴이 아니라면 강제종료.
@@ -275,9 +284,11 @@ function halfBetting(user){
         docNowChip(); //표기 변경
         docUserChip(); //표기 변경
     }
-    else{
-        callBetting(user); //유저의 칩이 요구치의 1.5배만큼 없다면 강제로 콜 배팅으로 넘어감.
+    else if (user.chip < Math.floor(round.nowChip * 1.5)){ //유저의 칩이 요구치의 1.5배만큼 없다면
+        callBetting(user); //강제로 콜 배팅으로 넘어감.
+        return;
     }
+
     if (user.name == "player" && round.bettingTurn === "player"){ //배팅할 턴이 아니라면 강제종료.
         round.bettingTurn = userList[1].name; //배팅할 유저 변경
         setTimeout(computerBetting, 500); // 0.5초 후 컴퓨터의 배팅
@@ -287,8 +298,7 @@ function halfBetting(user){
 
 //라운드 종료 시 칩 분배 등의 결과를 정산하는 코드
 function endRound(){
-    round.bettingTurn = undefined; //배팅할 유저 초기화
-
+    round.bettingTurn = "end"; //배팅할 유저 초기화
     let winner; //변수 선언 << 승자가 누구인지 판단하는 변수
 
     if (round.alive.length === 1){ //생존자가 1명이라면
